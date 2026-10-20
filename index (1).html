@@ -1,0 +1,853 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXA Finance | Expense Tracker</title>
+
+<style>
+:root {
+  --bg:#080b12;
+  --card:#111722;
+  --card2:#182131;
+  --border:#273246;
+  --blue:#397df6;
+  --green:#2bd69a;
+  --red:#ff667c;
+  --text:#f2f6ff;
+  --muted:#8e9bb0;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:radial-gradient(ellipse at top left,#172b4b,transparent 40%),var(--bg);
+  color:var(--text);
+  font-family:Segoe UI,Tahoma,Arial,sans-serif;
+}
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+.app { max-width:1400px; margin:auto; padding:24px; }
+header {
+  display:flex; justify-content:space-between;
+  align-items:center; gap:15px; margin-bottom:25px;
+}
+h1 { margin:0 0 7px; font-size:30px; }
+h2 { font-size:18px; margin:0; }
+p,.muted { color:var(--muted); }
+.brand { color:#70a5ff; font-weight:bold; letter-spacing:1px; }
+.actions { display:flex; gap:8px; }
+button {
+  border:0; border-radius:11px; padding:11px 15px;
+  color:white; background:var(--card2);
+}
+button.primary { background:var(--blue); }
+button:hover { filter:brightness(1.15); }
+.stats {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:15px; margin-bottom:20px;
+}
+.stat,.panel {
+  background:linear-gradient(145deg,#131c2b,#0f141e);
+  border:1px solid var(--border);
+  border-radius:19px; padding:20px; min-width:0;
+}
+.stat-label { color:var(--muted); font-size:13px; }
+.stat-value { font-size:clamp(18px,2.3vw,27px); font-weight:bold; margin:15px 0 8px; overflow-wrap:anywhere; }
+.green { color:var(--green); }
+.red { color:var(--red); }
+.layout {
+  display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);
+  gap:18px; align-items:start;
+}
+.stack { display:grid; gap:18px; min-width:0; }
+.panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; margin-bottom:18px;
+}
+.filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; }
+input,select {
+  background:#0a1019; color:white; border:1px solid var(--border);
+  border-radius:10px; padding:11px; min-width:0;
+}
+.filters input { flex:1; min-width:130px; }
+table { border-collapse:collapse; width:100%; }
+.table-wrap { overflow-x:auto; }
+th,td {
+  text-align:start; padding:13px 8px;
+  border-bottom:1px solid var(--border); font-size:13px;
+}
+th { color:var(--muted); }
+td { white-space:nowrap; }
+.category { display:flex; align-items:center; gap:8px; }
+.category-icon {
+  background:#203452; padding:9px; border-radius:10px;
+}
+.pill { padding:5px 8px; border-radius:20px; font-size:11px; }
+.pill.income { background:#123d32; color:var(--green); }
+.pill.expense { background:#48212b; color:#ff9aaa; }
+.row-actions { display:flex; gap:5px; }
+.row-actions button { padding:7px 9px; }
+.empty { padding:25px 8px; text-align:center; color:var(--muted); }
+.chart-wrap { height:210px; }
+canvas { display:block; width:100%; height:100%; }
+.legend { display:grid; gap:12px; margin-top:15px; }
+.legend-row { display:flex; justify-content:space-between; gap:8px; font-size:13px; }
+.dot { display:inline-block; width:9px; height:9px; border-radius:3px; margin-left:7px; }
+.quick { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.quick div { background:var(--card2); border-radius:13px; padding:15px; }
+.quick strong { display:block; margin-top:10px; overflow-wrap:anywhere; }
+.modal-bg {
+  display:none; position:fixed; inset:0; z-index:10;
+  background:#000c; align-items:center; justify-content:center; padding:15px;
+}
+.modal-bg.show { display:flex; }
+.modal {
+  width:min(520px,100%); max-height:90vh; overflow:auto;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:20px; padding:23px;
+}
+.modal-head { display:flex; justify-content:space-between; margin-bottom:20px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.field { display:grid; gap:7px; min-width:0; }
+.field label { color:var(--muted); font-size:13px; }
+.field input,.field select { width:100%; }
+.full { grid-column:1/-1; }
+.type-switch { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:18px; }
+.type-switch button.active { background:var(--blue); }
+.type-switch button.active[data-type="income"] { background:#168c68; }
+.modal-footer { display:flex; gap:10px; margin-top:20px; }
+.modal-footer button { flex:1; }
+#toast {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:#203452; border:1px solid var(--border); border-radius:12px;
+  padding:12px 18px; display:none; z-index:20;
+}
+#toast.show { display:block; }
+@media(max-width:1000px) {
+  .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .layout { grid-template-columns:1fr; }
+}
+@media(max-width:600px) {
+  .app { padding:13px; }
+  h1 { font-size:23px; }
+  header { align-items:flex-start; }
+  .stats { gap:9px; }
+  .stat,.panel { padding:14px; border-radius:15px; }
+  .stat-value { font-size:18px; }
+  .form-grid { grid-template-columns:1fr; }
+  .full { grid-column:auto; }
+  th,td { padding:11px 7px; }
+  .actions { flex-wrap:wrap; justify-content:flex-end; }
+}
+</style>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Expenses">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+</head>
+
+<body>
+<div class="app">
+
+<header>
+  <div>
+    <div class="brand">NEXA FINANCE ↗</div>
+    <h1 id="pageTitle">لوحة التحكم</h1>
+    <div class="muted" id="today"></div>
+  </div>
+  <div class="actions">
+    <button id="languageBtn">English</button>
+    <button id="exportBtn">↓ CSV</button>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="stat">
+    <div class="stat-label" data-key="balance">الرصيد الحالي</div>
+    <div class="stat-value" id="balance">0 ل.س</div>
+    <div class="muted" data-key="balanceHint">الدخل ناقص المصروفات</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label" data-key="income">إجمالي الدخل</div>
+    <div class="stat-value green" id="income">0 ل.س</div>
+    <div class="muted" data-key="allIncome">كل الدخل المسجل</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label" data-key="expenses">إجمالي المصروفات</div>
+    <div class="stat-value red" id="expenses">0 ل.س</div>
+    <div class="muted" data-key="allExpenses">كل المصروفات المسجلة</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label" data-key="count">عدد العمليات</div>
+    <div class="stat-value" id="count">0</div>
+    <div class="muted" data-key="saved">عملية محفوظة</div>
+  </div>
+</section>
+
+<section class="layout">
+  <div class="stack">
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-key="transactions">المعاملات</h2>
+        <button class="primary" id="addBtn">＋ <span data-key="add">إضافة عملية</span></button>
+      </div>
+
+      <div class="filters">
+        <input id="search" type="search" placeholder="ابحث عن عملية...">
+        <select id="typeFilter">
+          <option value="all" data-key="allTypes">كل الأنواع</option>
+          <option value="expense" data-key="expense">مصروف</option>
+          <option value="income" data-key="income">دخل</option>
+        </select>
+        <select id="categoryFilter"></select>
+        <select id="periodFilter">
+          <option value="all" data-key="allPeriods">كل الفترات</option>
+          <option value="month" data-key="month">هذا الشهر</option>
+          <option value="week" data-key="week">آخر 7 أيام</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th data-key="details">التفاصيل</th>
+            <th data-key="date">التاريخ</th>
+            <th data-key="type">النوع</th>
+            <th data-key="amount">المبلغ</th>
+            <th data-key="actions">الإجراءات</th>
+          </tr></thead>
+          <tbody id="transactionList"></tbody>
+        </table>
+        <div class="empty" id="empty"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-key="cashFlow">حركة الأموال - آخر 7 أيام</h2>
+      </div>
+      <div class="chart-wrap"><canvas id="flowChart"></canvas></div>
+      <p class="muted">🔵 <span data-key="income">الدخل</span>
+        &nbsp;&nbsp; 🟢 <span data-key="expenses">المصروفات</span></p>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="panel">
+      <div class="panel-head"><h2 data-key="categoryChart">المصروفات حسب الفئة</h2></div>
+      <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2 data-key="summary">ملخص سريع</h2></div>
+      <div class="quick">
+        <div><span class="muted" data-key="average">متوسط المصروف</span><strong id="average">0 ل.س</strong></div>
+        <div><span class="muted" data-key="topCategory">أعلى فئة إنفاقاً</span><strong id="topCategory">—</strong></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 data-key="tipTitle">تلميحة مالية</h2>
+      <p id="tip" data-key="tip">تابع مصروفاتك بانتظام لتعرف أين تذهب أموالك.</p>
+    </section>
+  </div>
+</section>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <form class="modal" id="transactionForm">
+    <div class="modal-head">
+      <h2 id="modalTitle">إضافة عملية جديدة</h2>
+      <button type="button" id="closeBtn">✕</button>
+    </div>
+
+    <div class="type-switch">
+      <button type="button" class="active" data-type="expense" id="expenseBtn">− <span data-key="expense">مصروف</span></button>
+      <button type="button" data-type="income" id="incomeBtn">＋ <span data-key="income">دخل</span></button>
+    </div>
+
+    <div class="form-grid">
+      <div class="field full">
+        <label for="amountInput" data-key="amount">المبلغ</label>
+        <input id="amountInput" type="number" min="0.01" step="any" required placeholder="مثال: 25000">
+      </div>
+      <div class="field">
+        <label for="categoryInput" data-key="category">الفئة</label>
+        <select id="categoryInput" required></select>
+      </div>
+      <div class="field">
+        <label for="dateInput" data-key="date">التاريخ</label>
+        <input id="dateInput" type="date" required>
+      </div>
+      <div class="field full">
+        <label for="descriptionInput" data-key="description">الوصف</label>
+        <input id="descriptionInput" maxlength="100" placeholder="مثال: مشتريات المنزل">
+      </div>
+      <div class="field full">
+        <label for="paymentInput" data-key="payment">طريقة الدفع</label>
+        <select id="paymentInput">
+          <option value="cash" data-key="cash">نقداً</option>
+          <option value="card" data-key="card">بطاقة</option>
+          <option value="bank" data-key="bank">تحويل بنكي</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" id="cancelBtn" data-key="cancel">إلغاء</button>
+      <button class="primary" type="submit" data-key="save">حفظ العملية</button>
+    </div>
+  </form>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+const STORAGE_KEY = "nexa-expense-tracker-v1";
+
+const categories = [
+  {id:"food",icon:"🍽️",ar:"طعام ومطاعم",en:"Food & Dining"},
+  {id:"transport",icon:"🚗",ar:"مواصلات",en:"Transport"},
+  {id:"shopping",icon:"🛍️",ar:"تسوق",en:"Shopping"},
+  {id:"bills",icon:"🧾",ar:"فواتير وخدمات",en:"Bills & Utilities"},
+  {id:"health",icon:"💚",ar:"صحة",en:"Health"},
+  {id:"home",icon:"🏠",ar:"المنزل",en:"Home"},
+  {id:"entertainment",icon:"🎮",ar:"ترفيه",en:"Entertainment"},
+  {id:"education",icon:"📚",ar:"تعليم",en:"Education"},
+  {id:"salary",icon:"💼",ar:"راتب",en:"Salary"},
+  {id:"other",icon:"📦",ar:"أخرى",en:"Other"}
+];
+
+const words = {
+  ar:{
+    dashboard:"لوحة التحكم",balance:"الرصيد الحالي",
+    balanceHint:"الدخل ناقص المصروفات",income:"الدخل",
+    allIncome:"كل الدخل المسجل",expenses:"المصروفات",
+    allExpenses:"كل المصروفات المسجلة",count:"عدد العمليات",
+    saved:"عملية محفوظة",transactions:"المعاملات",
+    add:"إضافة عملية",allTypes:"كل الأنواع",expense:"مصروف",
+    allPeriods:"كل الفترات",month:"هذا الشهر",week:"آخر 7 أيام",
+    details:"التفاصيل",date:"التاريخ",type:"النوع",
+    amount:"المبلغ",actions:"الإجراءات",cashFlow:"حركة الأموال - آخر 7 أيام",
+    categoryChart:"المصروفات حسب الفئة",summary:"ملخص سريع",
+    average:"متوسط المصروف",topCategory:"أعلى فئة إنفاقاً",
+    tipTitle:"تلميحة مالية",tip:"تابع مصروفاتك بانتظام لتعرف أين تذهب أموالك.",
+    category:"الفئة",description:"الوصف",payment:"طريقة الدفع",
+    cash:"نقداً",card:"بطاقة",bank:"تحويل بنكي",
+    cancel:"إلغاء",save:"حفظ العملية",allCategories:"كل الفئات",
+    search:"ابحث عن عملية...",empty:"لا توجد عمليات مطابقة.",
+    edit:"تعديل",delete:"حذف",confirmDelete:"هل تريد حذف هذه العملية؟",
+    added:"تمت إضافة العملية بنجاح",updated:"تم تعديل العملية",
+    deleted:"تم حذف العملية",invalid:"أدخل مبلغاً أكبر من صفر.",
+    newTransaction:"إضافة عملية جديدة",editTransaction:"تعديل العملية",
+    incomeType:"دخل",expenseType:"مصروف",exported:"تم تصدير الملف",
+    noExpenses:"لا توجد مصروفات بعد",private:"بياناتك محفوظة على جهازك"
+  },
+  en:{
+    dashboard:"Dashboard",balance:"Current Balance",
+    balanceHint:"Income minus expenses",income:"Income",
+    allIncome:"All recorded income",expenses:"Expenses",
+    allExpenses:"All recorded expenses",count:"Transactions",
+    saved:"Saved transactions",transactions:"Transactions",
+    add:"Add transaction",allTypes:"All types",expense:"Expense",
+    allPeriods:"All periods",month:"This month",week:"Last 7 days",
+    details:"Details",date:"Date",type:"Type",amount:"Amount",
+    actions:"Actions",cashFlow:"Cash Flow - Last 7 Days",
+    categoryChart:"Expenses by Category",summary:"Quick Summary",
+    average:"Average Expense",topCategory:"Top Category",
+    tipTitle:"Money Tip",tip:"Track your spending regularly to understand where your money goes.",
+    category:"Category",description:"Description",payment:"Payment Method",
+    cash:"Cash",card:"Card",bank:"Bank Transfer",cancel:"Cancel",
+    save:"Save Transaction",allCategories:"All categories",
+    search:"Search transactions...",empty:"No matching transactions.",
+    edit:"Edit",delete:"Delete",confirmDelete:"Delete this transaction?",
+    added:"Transaction added",updated:"Transaction updated",
+    deleted:"Transaction deleted",invalid:"Enter an amount greater than zero.",
+    newTransaction:"Add New Transaction",editTransaction:"Edit Transaction",
+    incomeType:"Income",expenseType:"Expense",exported:"File exported",
+    noExpenses:"No expenses recorded yet",private:"Your data stays on this device"
+  }
+};
+
+let lang = "ar";
+let editingId = null;
+let formType = "expense";
+let transactions = loadData();
+
+const $ = id => document.getElementById(id);
+const palette = ["#397df6","#2bd69a","#a56bff","#ffb547",
+  "#ff667c","#38c6d9","#f06fbd","#8aa6c9","#d3e15d","#718096"];
+
+function loadData() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+  } catch {
+    alert("تعذر حفظ البيانات في المتصفح.");
+  }
+}
+
+function t(key) { return words[lang][key] || key; }
+
+function category(id) {
+  return categories.find(c => c.id === id) || categories[categories.length-1];
+}
+
+function categoryName(id) {
+  return category(id)[lang];
+}
+
+function todayISO() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+
+function money(value) {
+  return new Intl.NumberFormat(lang === "ar" ? "ar-SY" : "en-US", {
+    maximumFractionDigits:2
+  }).format(Number(value) || 0) + (lang === "ar" ? " ل.س" : " SYP");
+}
+
+function dateText(value) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-SY" : "en-US", {
+    day:"numeric", month:"short", year:"numeric"
+  }).format(new Date(value + "T12:00:00"));
+}
+
+function safe(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[ch]);
+}
+
+function notify(message) {
+  $("toast").textContent = message;
+  $("toast").classList.add("show");
+  setTimeout(() => $("toast").classList.remove("show"), 2400);
+}
+
+function sums(list = transactions) {
+  return list.reduce((result, item) => {
+    result[item.type === "income" ? "income" : "expense"] += Number(item.amount) || 0;
+    return result;
+  }, {income:0,expense:0});
+}
+
+function totalsByCategory(list) {
+  const result = {};
+  list.forEach(item => {
+    result[item.category] = (result[item.category] || 0) + Number(item.amount);
+  });
+  return result;
+}
+
+function renderCategoryOptions() {
+  const oldFilter = $("categoryFilter").value || "all";
+  $("categoryFilter").innerHTML =
+    `<option value="all">${safe(t("allCategories"))}</option>` +
+    categories.map(c =>
+      `<option value="${c.id}">${c.icon} ${safe(c[lang])}</option>`
+    ).join("");
+
+  $("categoryFilter").value = oldFilter;
+
+  const oldCategory = $("categoryInput").value || "food";
+  $("categoryInput").innerHTML = categories.map(c =>
+    `<option value="${c.id}">${c.icon} ${safe(c[lang])}</option>`
+  ).join("");
+  $("categoryInput").value = oldCategory;
+}
+
+function renderStats() {
+  const s = sums();
+  $("balance").textContent = money(s.income - s.expense);
+  $("income").textContent = money(s.income);
+  $("expenses").textContent = money(s.expense);
+  $("count").textContent = transactions.length;
+
+  const expenses = transactions.filter(x => x.type === "expense");
+  $("average").textContent = money(expenses.length ? s.expense / expenses.length : 0);
+
+  const grouped = totalsByCategory(expenses);
+  const top = Object.entries(grouped).sort((a,b) => b[1] - a[1])[0];
+  $("topCategory").textContent = top ? categoryName(top[0]) : "—";
+
+  if (!transactions.length) {
+    $("tip").textContent = t("tip");
+  } else if (s.expense > s.income) {
+    $("tip").textContent = lang === "ar"
+      ? "تنبيه: مصروفاتك المسجلة تتجاوز دخلك."
+      : "Your recorded expenses exceed your income.";
+  } else {
+    $("tip").textContent = t("tip");
+  }
+}
+
+function filteredTransactions() {
+  const query = $("search").value.trim().toLowerCase();
+  const type = $("typeFilter").value;
+  const cat = $("categoryFilter").value;
+  const period = $("periodFilter").value;
+  const now = new Date();
+
+  return transactions.filter(item => {
+    const text = (item.description || "").toLowerCase() +
+      " " + categoryName(item.category).toLowerCase();
+
+    if (query && !text.includes(query)) return false;
+    if (type !== "all" && item.type !== type) return false;
+    if (cat !== "all" && item.category !== cat) return false;
+
+    const d = new Date((item.date || "2000-01-01") + "T12:00:00");
+
+    if (period === "month" &&
+        (d.getMonth() !== now.getMonth() ||
+         d.getFullYear() !== now.getFullYear())) return false;
+
+    if (period === "week") {
+      const start = new Date();
+      start.setHours(0,0,0,0);
+      start.setDate(start.getDate() - 6);
+      if (d < start || d > now) return false;
+    }
+
+    return true;
+  }).sort((a,b) => (b.date || "").localeCompare(a.date || ""));
+}
+
+function renderTransactions() {
+  const list = filteredTransactions();
+
+  $("transactionList").innerHTML = list.map(item => {
+    const c = category(item.category);
+    const description = item.description || categoryName(item.category);
+
+    return `<tr>
+      <td><div class="category">
+        <span class="category-icon">${c.icon}</span>
+        <span>${safe(description)}<br><small class="muted">${safe(categoryName(item.category))}</small></span>
+      </div></td>
+      <td>${safe(dateText(item.date))}</td>
+      <td><span class="pill ${item.type}">
+        ${safe(t(item.type === "income" ? "incomeType" : "expenseType"))}
+      </span></td>
+      <td class="${item.type === "income" ? "green" : "red"}">
+        ${item.type === "income" ? "+" : "−"}${safe(money(item.amount))}
+      </td>
+      <td><div class="row-actions">
+        <button type="button" data-edit="${safe(item.id)}" title="${t("edit")}">✎</button>
+        <button type="button" data-delete="${safe(item.id)}" title="${t("delete")}">×</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+
+  $("empty").textContent = t("empty");
+  $("empty").style.display = list.length ? "none" : "block";
+}
+
+function setupCanvas(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, rect.width * ratio);
+  canvas.height = Math.max(1, rect.height * ratio);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  return {ctx,w:rect.width,h:rect.height};
+}
+
+function drawDonut() {
+  const canvas = $("donutChart");
+  if (!canvas.offsetWidth) return;
+
+  const {ctx,w,h} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+
+  const data = Object.entries(totalsByCategory(
+    transactions.filter(x => x.type === "expense")
+  )).sort((a,b) => b[1] - a[1]);
+
+  const total = data.reduce((sum,item) => sum + item[1], 0);
+  const cx = w/2, cy = h/2;
+  const radius = Math.min(w,h) * .31;
+  const line = Math.max(15,Math.min(w,h) * .11);
+
+  ctx.lineWidth = line;
+  ctx.strokeStyle = "#253146";
+  ctx.beginPath();
+  ctx.arc(cx,cy,radius,0,Math.PI*2);
+  ctx.stroke();
+
+  if (total > 0) {
+    let start = -Math.PI/2;
+    data.forEach(([id,value]) => {
+      const index = categories.findIndex(c => c.id === id);
+      const angle = value / total * Math.PI * 2;
+
+      ctx.beginPath();
+      ctx.strokeStyle = palette[index % palette.length];
+      ctx.arc(cx,cy,radius,start,start + Math.max(0,angle - .025));
+      ctx.stroke();
+      start += angle;
+    });
+  }
+
+  $("legend").innerHTML = data.length ? data.slice(0,7).map(([id,value]) => {
+    const index = categories.findIndex(c => c.id === id);
+    return `<div class="legend-row">
+      <span><i class="dot" style="background:${palette[index % palette.length]}"></i>
+      ${category(id).icon} ${safe(categoryName(id))}</span>
+      <strong>${safe(money(value))}</strong>
+    </div>`;
+  }).join("") : `<div class="muted">${t("noExpenses")}</div>`;
+}
+
+function drawFlow() {
+  const canvas = $("flowChart");
+  if (!canvas.offsetWidth) return;
+
+  const {ctx,w,h} = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+
+  const days = [];
+  for (let i=6; i>=0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate()-i);
+    const date = new Date(d.getTime()-d.getTimezoneOffset()*60000)
+      .toISOString().slice(0,10);
+    const s = sums(transactions.filter(x => x.date === date));
+    days.push({
+      income:s.income,
+      expense:s.expense,
+      label:new Intl.DateTimeFormat(lang === "ar" ? "ar-SY" : "en-US",
+        {weekday:"short"}).format(d)
+    });
+  }
+
+  const max = Math.max(1,...days.flatMap(d => [d.income,d.expense]));
+  const pad = {top:12,bottom:30,left:8,right:8};
+  const chartH = h-pad.top-pad.bottom;
+  const groupW = (w-pad.left-pad.right)/7;
+
+  days.forEach((d,i) => {
+    const center = pad.left + groupW*(i+.5);
+    const barW = Math.max(5,Math.min(18,groupW*.26));
+    const incomeH = d.income/max*chartH*.85;
+    const expenseH = d.expense/max*chartH*.85;
+
+    ctx.fillStyle = "#397df6";
+    ctx.fillRect(center-barW-2,pad.top+chartH-incomeH,barW,incomeH);
+
+    ctx.fillStyle = "#2bd69a";
+    ctx.fillRect(center+2,pad.top+chartH-expenseH,barW,expenseH);
+
+    ctx.fillStyle = "#9eacc0";
+    ctx.font = "11px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(d.label,center,h-7);
+  });
+}
+
+function renderAll() {
+  renderStats();
+  renderTransactions();
+  drawDonut();
+  drawFlow();
+}
+
+function openModal(id = null) {
+  editingId = id;
+  const item = id ? transactions.find(x => x.id === id) : null;
+
+  formType = item ? item.type : "expense";
+  $("modalTitle").textContent = t(item ? "editTransaction" : "newTransaction");
+  $("amountInput").value = item ? item.amount : "";
+  $("categoryInput").value = item ? item.category : "food";
+  $("dateInput").value = item ? item.date : todayISO();
+  $("descriptionInput").value = item ? item.description : "";
+  $("paymentInput").value = item ? item.payment : "cash";
+
+  updateTypeButtons();
+  $("modalBg").classList.add("show");
+  $("amountInput").focus();
+}
+
+function closeModal() {
+  $("modalBg").classList.remove("show");
+  editingId = null;
+}
+
+function updateTypeButtons() {
+  document.querySelectorAll(".type-switch button").forEach(button => {
+    button.classList.toggle("active",button.dataset.type === formType);
+  });
+}
+
+$("transactionForm").addEventListener("submit",event => {
+  event.preventDefault();
+
+  const amount = Number($("amountInput").value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    notify(t("invalid"));
+    return;
+  }
+
+  const item = {
+    id: editingId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+    type:formType,
+    amount,
+    category:$("categoryInput").value,
+    date:$("dateInput").value || todayISO(),
+    description:$("descriptionInput").value.trim(),
+    payment:$("paymentInput").value,
+    createdAt:Date.now()
+  };
+
+  if (editingId) {
+    transactions = transactions.map(x => x.id === editingId ? item : x);
+    notify(t("updated"));
+  } else {
+    transactions.push(item);
+    notify(t("added"));
+  }
+
+  saveData();
+  closeModal();
+  renderAll();
+});
+
+document.querySelectorAll(".type-switch button").forEach(button => {
+  button.addEventListener("click",() => {
+    formType = button.dataset.type;
+    updateTypeButtons();
+  });
+});
+
+$("transactionList").addEventListener("click",event => {
+  const edit = event.target.closest("[data-edit]");
+  const del = event.target.closest("[data-delete]");
+
+  if (edit) openModal(edit.dataset.edit);
+
+  if (del) {
+    if (!confirm(t("confirmDelete"))) return;
+    transactions = transactions.filter(x => x.id !== del.dataset.delete);
+    saveData();
+    renderAll();
+    notify(t("deleted"));
+  }
+});
+
+$("addBtn").addEventListener("click",() => openModal());
+$("closeBtn").addEventListener("click",closeModal);
+$("cancelBtn").addEventListener("click",closeModal);
+
+$("modalBg").addEventListener("click",event => {
+  if (event.target === $("modalBg")) closeModal();
+});
+
+document.addEventListener("keydown",event => {
+  if (event.key === "Escape") closeModal();
+});
+
+["search","typeFilter","categoryFilter","periodFilter"].forEach(id => {
+  $(id).addEventListener(id === "search" ? "input" : "change",renderTransactions);
+});
+
+function setLanguage(next) {
+  lang = next;
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+
+  document.querySelectorAll("[data-key]").forEach(element => {
+    const key = element.dataset.key;
+    if (words[lang][key]) element.textContent = words[lang][key];
+  });
+
+  $("languageBtn").textContent = lang === "ar" ? "English" : "العربية";
+  $("search").placeholder = t("search");
+  $("pageTitle").textContent = t("dashboard");
+  $("today").textContent = new Intl.DateTimeFormat(
+    lang === "ar" ? "ar-SY" : "en-US",
+    {weekday:"long",day:"numeric",month:"long",year:"numeric"}
+  ).format(new Date());
+
+  renderCategoryOptions();
+  renderAll();
+}
+
+$("languageBtn").addEventListener("click",() => {
+  setLanguage(lang === "ar" ? "en" : "ar");
+});
+
+$("exportBtn").addEventListener("click",() => {
+  const headers = [
+    t("date"),t("type"),t("category"),t("description"),
+    t("amount"),t("payment")
+  ];
+
+  const rows = transactions.map(x => [
+    x.date,
+    t(x.type === "income" ? "incomeType" : "expenseType"),
+    categoryName(x.category),
+    x.description || "",
+    x.amount,
+    t(x.payment || "cash")
+  ]);
+
+  const csv = "\ufeff" + [headers,...rows].map(row =>
+    row.map(value => '"' + String(value ?? "").replace(/"/g,'""') + '"').join(",")
+  ).join("\r\n");
+
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "nexa-transactions-" + todayISO() + ".csv";
+  link.click();
+  URL.revokeObjectURL(url);
+  notify(t("exported"));
+});
+
+let resizeTimer;
+window.addEventListener("resize",() => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    drawDonut();
+    drawFlow();
+  },120);
+});
+
+renderCategoryOptions();
+$("dateInput").value = todayISO();
+setLanguage("ar");
+renderAll();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("./service-worker.js")
+        .catch((error) => {
+          console.error("Service Worker error:", error);
+        });
+    });
+  }
+</script>
+</body>
+</html>
