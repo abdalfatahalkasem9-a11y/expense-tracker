@@ -146,9 +146,121 @@ canvas { display:block; width:100%; height:100%; }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Expenses">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  
+<style>
+/* NEXA Finance - Splash Screen */
+#nexa-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 42%,
+      rgba(0, 105, 255, 0.20), transparent 48%),
+    linear-gradient(145deg, #030817, #02040b 70%);
+  color: #fff;
+  font-family: Arial, sans-serif;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .6s ease, visibility .6s ease;
+}
+
+#nexa-splash.nexa-hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#nexa-splash .nexa-logo {
+  width: 100px;
+  height: 100px;
+  display: grid;
+  place-items: center;
+  border-radius: 28px;
+  border: 1px solid rgba(54, 169, 255, .5);
+  background: linear-gradient(145deg, #102c5a, #030817);
+  box-shadow: 0 0 35px rgba(0, 119, 255, .35);
+  color: #36baff;
+  font-size: 48px;
+  font-weight: 900;
+  animation: nexa-float 1.8s ease-in-out infinite alternate;
+}
+
+#nexa-splash .nexa-name {
+  margin-top: 28px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 9px;
+}
+
+#nexa-splash .nexa-subtitle {
+  margin-top: 8px;
+  color: #38b8ff;
+  font-size: 13px;
+  letter-spacing: 7px;
+}
+
+#nexa-splash .nexa-tagline {
+  margin-top: 28px;
+  color: #d6e8ff;
+  font-size: 15px;
+  text-align: center;
+}
+
+#nexa-splash .nexa-loader {
+  width: 150px;
+  height: 3px;
+  margin-top: 42px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #142846;
+}
+
+#nexa-splash .nexa-loader::after {
+  content: "";
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: #36baff;
+  box-shadow: 0 0 12px #168bff;
+  animation: nexa-loading 1.4s ease-in-out infinite;
+}
+
+@keyframes nexa-float {
+  from { transform: translateY(0); }
+  to { transform: translateY(-9px); }
+}
+
+@keyframes nexa-loading {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(340%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #nexa-splash *,
+  #nexa-splash .nexa-loader::after {
+    animation: none !important;
+  }
+}
+</style>
+
 </head>
 
 <body>
+  
+<div id="nexa-splash">
+  <div class="nexa-logo">N</div>
+  <div class="nexa-name">NEXA</div>
+  <div class="nexa-subtitle">FINANCE</div>
+  <div class="nexa-tagline">Your Money. Your Control.</div>
+  <div class="nexa-loader"></div>
+</div>
+
 <div class="app">
 
 <header>
@@ -849,5 +961,28 @@ renderAll();
     });
   }
 </script>
+  
+<script>
+(function () {
+  const splash = document.getElementById("nexa-splash");
+  if (!splash) return;
+
+  function hideNexaSplash() {
+    splash.classList.add("nexa-hide");
+
+    setTimeout(function () {
+      splash.remove();
+    }, 700);
+  }
+
+  window.addEventListener("load", function () {
+    setTimeout(hideNexaSplash, 1800);
+  });
+
+  // احتياط إذا كان التطبيق مفتوحاً مسبقاً
+  setTimeout(hideNexaSplash, 4000);
+})();
+</script>
+
 </body>
 </html>
