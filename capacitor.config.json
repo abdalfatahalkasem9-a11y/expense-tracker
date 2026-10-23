@@ -2,5 +2,11 @@
 {
   "appId": "com.alkasem.nexafinance",
   "appName": "NEXA Finance",
-  "webDir": "www"
+  "webDir": "www",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "LIGHT"
+    }
+  }
 }
